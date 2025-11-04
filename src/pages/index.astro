@@ -4,6 +4,9 @@ import ImageGen from '../components/ImageGen.astro';
 ---
 
 <Layout>
+	<form method="post" action="/api/logout" class="self-end bg-red-500 rounded-md p-2 text-white cursor-pointer">
+		<button type="submit" class=" underline cursor-pointer">Cerrar sesión</button>
+	</form>
 	<h2 class="text-2xl font-bold">DbH4ck UNT3ls</h2>
 	<ImageGen />
 </Layout>

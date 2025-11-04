@@ -1,0 +1,26 @@
+---
+import Layout from '../layouts/Layout.astro';
+const params = new URL(Astro.request.url).searchParams;
+const error = params.get('error');
+export const prerender = false;
+---
+
+<Layout>
+  <form method="post" action="/api/login" class="w-full bg-white border border-gray-200 rounded-lg p-6 shadow-sm flex flex-col gap-4">
+    <h1 class="text-xl font-semibold text-gray-800">Acceso privado</h1>
+    {error && (
+      <div class="text-red-600 text-sm">Credenciales inválidas</div>
+    )}
+    <label class="flex flex-col gap-1">
+      <span class="text-sm text-gray-700">Usuario</span>
+      <input name="username" type="text" required class="border rounded px-3 py-2" />
+    </label>
+    <label class="flex flex-col gap-1">
+      <span class="text-sm text-gray-700">Contraseña</span>
+      <input name="password" type="password" required class="border rounded px-3 py-2" />
+    </label>
+    <button type="submit" class="bg-black text-white rounded px-4 py-2">Entrar</button>
+  </form>
+</Layout>
+
+
