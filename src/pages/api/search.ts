@@ -22,7 +22,7 @@ export const GET: APIRoute = async ({ request }) => {
   const q = url.searchParams.get("q")?.trim() ?? "";
 
   if (!q) {
-    return new Response(JSON.stringify({ error: "Query parameter 'q' is required" }), {
+    return new Response(JSON.stringify({ error: "Query parameter 'q' is required",envs: `${R2_ACCOUNT_ID}, ${R2_ACCESS_KEY_ID}, ${R2_SECRET_ACCESS_KEY}, ${R2_BUCKET}` }), {
       status: 400,
       headers: { "Content-Type": "application/json" },
     });
