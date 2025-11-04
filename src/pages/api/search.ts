@@ -1,4 +1,9 @@
 import type { APIRoute } from 'astro';
+// Polyfill DOMParser for Node runtimes to satisfy AWS SDK XML parsing
+import { DOMParser as XmldomParser } from '@xmldom/xmldom';
+if (typeof (globalThis as any).DOMParser === 'undefined') {
+  (globalThis as any).DOMParser = XmldomParser as unknown as DOMParser;
+}
 import { S3Client, ListObjectsV2Command, GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { db } from '../../utils/db';
