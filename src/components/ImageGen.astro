@@ -1,0 +1,179 @@
+---
+// No necesitamos lógica del servidor aquí, todo se maneja en el cliente
+---
+
+<section class="w-full flex flex-col items-center justify-center gap-4 py-8">
+  <form id="search-form" class="mb-4 flex items-center gap-2">
+    <input
+      class="border border-gray-300 rounded-md p-2"
+      type="text"
+      id="q"
+      name="q"
+      placeholder="Dni o Codigo"
+      autocomplete="off"
+    />
+    <button
+      class="bg-blue-500 text-white rounded-md p-2 hover:bg-blue-600 transition-colors"
+      type="submit"
+    >
+      Buscar
+    </button>
+  </form>
+
+  <div id="loading-indicator" class="hidden mb-4 text-center text-gray-500">
+    <p>🔄 Buscando...</p>
+  </div>
+
+  <div id="results-container" class="w-full max-w-4xl mx-auto">
+    <p class="text-gray-500 text-center">Ingresa un código o DNI (8 dígitos) para buscar.</p>
+  </div>
+</section>
+
+<script>
+  const form = document.getElementById("search-form") as HTMLFormElement;
+  const input = document.getElementById("q") as HTMLInputElement;
+  const loadingIndicator = document.getElementById("loading-indicator") as HTMLDivElement;
+  const resultsContainer = document.getElementById("results-container") as HTMLDivElement;
+
+  async function searchImages(query: string) {
+    if (!query.trim()) {
+      resultsContainer.innerHTML = '<p class="text-gray-500 text-center">Ingresa un código o DNI (8 dígitos) para buscar.</p>';
+      return;
+    }
+
+    // Mostrar indicador de carga
+    loadingIndicator.classList.remove("hidden");
+    resultsContainer.innerHTML = "";
+
+    try {
+      const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+      const data = await response.json();
+
+      loadingIndicator.classList.add("hidden");
+
+      if (data.error) {
+        resultsContainer.innerHTML = `<p class="text-red-500 text-center">❌ Error: ${data.error}</p>`;
+        return;
+      }
+
+      let html = "";
+
+      // Mostrar datos de la base de datos
+      if (data.dbResults && data.dbResults.length > 0) {
+        html += '<div class="mb-6"><h3 class="text-xl font-bold mb-4 text-center">📋 Datos encontrados en el <a href="https://www.untels.edu.pe/FTP/2024.09.17.0019_PADRON%20ALUMNOS%20MATRICULADOS%202024%20II.pdf" target="_blank" class="text-blue-500 hover:text-blue-600 underline"> este padron</a></h3>';
+        html += '<div class="flex flex-col items-center justify-center gap-4">';
+        
+        data.dbResults.forEach((record: any) => {
+          html += `
+            <div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm w-full max-w-2xl">
+              <div class="space-y-2">
+                <p><strong>Código:</strong> ${record["Codigo"] || "N/A"}</p>
+                <p><strong>DNI:</strong> ${record["Nro Documento"] || "N/A"}</p>
+                <p><strong>Apellidos:</strong> ${record["Ap. Paterno"] || ""} ${record["Ap. Materno"] || ""}</p>
+                <p><strong>Nombres:</strong> ${record["Nombres"] || "N/A"}</p>
+                <p><strong>Correo:</strong> ${record["Correo Institucional"] || "N/A"}</p>
+                <p><strong>Categoría:</strong> ${record["Categoria"] || "N/A"}</p>
+                <p><strong>Facultad:</strong> ${record["Facultad"] || "N/A"}</p>
+              </div>
+            </div>
+          `;
+        });
+        
+        html += '</div></div>';
+      }
+
+      // Mostrar datos filtrados del intranet
+      if (data.intranetResults && data.intranetResults.length > 0) {
+        html += '<div class="mb-6"><h3 class="text-xl font-bold mb-4 text-center">🔍 Datos filtrados en el <a href="https://intranet.untels.edu.pe/tramitevirtual/administrado/consultarcliente" target="_blank" class="text-blue-500 hover:text-blue-600 underline">intranet</a></h3>';
+        html += '<div class="flex flex-col items-center justify-center gap-4">';
+        
+        data.intranetResults.forEach((item: any) => {
+          const intranetData = item.data;
+          // Convertir fecha de formato /Date(milliseconds)/ a fecha legible
+          let fechaNacimiento = "N/A";
+          if (intranetData.FechaNacimiento) {
+            const match = intranetData.FechaNacimiento.match(/\/Date\((\d+)\)\//);
+            if (match) {
+              const date = new Date(parseInt(match[1]));
+              fechaNacimiento = date.toLocaleDateString('es-PE', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+              });
+            }
+          }
+          
+          html += `
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 shadow-sm w-full max-w-2xl">
+              <div class="space-y-2">
+                <p><strong>Cliente ID:</strong> ${intranetData.ClienteId || "N/A"}</p>
+                <p><strong>Documento:</strong> ${item.documento || "N/A"}</p>
+                <p><strong>Apellido Paterno:</strong> ${intranetData.ApellidoPaterno || "N/A"}</p>
+                <p><strong>Apellido Materno:</strong> ${intranetData.ApellidoMaterno || "N/A"}</p>
+                <p><strong>Nombre:</strong> ${intranetData.Nombre || "N/A"}</p>
+                <p><strong>Nombre Completo:</strong> ${intranetData.NombreCompleto || "N/A"}</p>
+                <p><strong>Fecha de Nacimiento:</strong> ${fechaNacimiento}</p>
+                <p><strong>Correo Electrónico:</strong> ${intranetData.CorreoElectronico || "N/A"}</p>
+                <p><strong>Teléfono:</strong> ${intranetData.Telefono || "N/A"}</p>
+              </div>
+            </div>
+          `;
+        });
+        
+        html += '</div></div>';
+      }
+
+      // Mostrar imágenes
+      if (data.images && data.images.length > 0) {
+        html += '<div class="mt-6"><h3 class="text-xl font-bold mb-4 text-center">🖼️ Imágenes encontradas</h3>';
+        html += '<div class="flex flex-col items-center justify-center gap-4">';
+        
+        data.images.forEach((image: any) => {
+          html += `
+            <div class="flex flex-col items-center justify-center">
+              <img
+                src="${image.url}"
+                alt="${image.name}"
+                class="max-w-full h-auto rounded shadow-md"
+              />
+            </div>
+          `;
+        });
+        
+        html += '</div></div>';
+      }
+
+      // Si no hay resultados
+      if ((!data.dbResults || data.dbResults.length === 0) && 
+          (!data.intranetResults || data.intranetResults.length === 0) && 
+          (!data.images || data.images.length === 0)) {
+        html = `
+          <p class="text-red-500 text-center">
+            ❌ No se encontraron resultados para <strong>${query}</strong>
+          </p>
+        `;
+      }
+
+      resultsContainer.innerHTML = html;
+    } catch (error) {
+      loadingIndicator.classList.add("hidden");
+      resultsContainer.innerHTML = `<p class="text-red-500 text-center">❌ Error al buscar: ${error}</p>`;
+      console.error("Error searching images:", error);
+    }
+  }
+
+  // Manejar el submit del formulario
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const query = input.value.trim();
+    searchImages(query);
+  });
+
+  // Cargar resultados iniciales si hay un parámetro q en la URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const initialQuery = urlParams.get("q");
+  if (initialQuery) {
+    input.value = initialQuery;
+    searchImages(initialQuery);
+  }
+</script>
