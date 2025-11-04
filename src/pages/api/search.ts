@@ -32,7 +32,7 @@ export const GET: APIRoute = async ({ request }) => {
   const isDni = /^\d{8}$/.test(qLower);
 
   try {
-    // Buscar solo por Código en la base local (si NO es DNI)
+    // Buscar solo por Código en la base local 
     const dbResults = isDni
       ? []
       : db.filter((record) => {
